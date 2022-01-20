@@ -1,0 +1,18 @@
+{
+  "name": "intro",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start:part1": "tsc && node dist/part1/index.js",
+    "start:server": "tsc && node dist/part2/server.js",
+    "start:client": "tsc && node dist/part2/client.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.8",
+    "typescript": "^4.5.4"
+  }
+}
