@@ -2,7 +2,7 @@ import net, { Socket, Server } from 'net';
 import { Database } from '../../part1/Database';
 import { commandParser } from './command-parser';
 import { Command } from './interfaces/command.interface';
-import { CommandType } from './types/command-types.type';
+import { CommandType } from './enums/command-types.enum';
 
 
 export class BongoDBServer {

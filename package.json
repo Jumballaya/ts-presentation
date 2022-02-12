@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "start:server:basic": "tsc && node dist/part2/server-basic.js",
     "start:part1": "tsc && node dist/part1/index.js",
     "start:server": "tsc && node dist/part2/server.js",
     "start:client": "tsc && node dist/part2/client.js"

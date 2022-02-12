@@ -1,8 +1,13 @@
 import { Command } from "./interfaces/command.interface";
-import { CommandType } from "./types/command-types.type";
+import { CommandType } from "./enums/command-types.enum";
+import { CollectionCommand } from "./interfaces/collection-command.interface";
+import { EntryCommand } from "./interfaces/entry-command.interface";
 
-const hasKey = (obj: any, key: string): boolean => {
-  return obj && obj.hasOwnProperty(key) && obj[key];
+type KeyedObject = Command | CollectionCommand | EntryCommand;
+
+const hasKey = (obj: KeyedObject | undefined, key: string): boolean => {
+  if (obj) return key in obj;
+  return false;
 }
 
 export const commandParser = (command: Command): CommandType => {
