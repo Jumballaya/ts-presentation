@@ -1,3 +1,4 @@
+import path from "path";
 import { Database } from "./Database";
 
 interface Book {
@@ -5,28 +6,35 @@ interface Book {
   author: string;
 }
 
-const db = new Database();
+const main = async () => {
 
-const bookCollection = db.createCollection<Book>('books', 'Book');
+  const db = new Database(path.resolve(__dirname, '..', '..', '.data'));
 
-bookCollection.create([{
-  name: '20,000 Leagues Under the Sea',
-  author: 'Jules Verne',
-}, {
-  name: 'Journey to the Center of the Earth',
-  author: 'Jules Verne',
-}, {
-  name: 'Frankenstein',
-  author: 'Jules Verne',
-}, {
-  name: 'The Time Machine',
-  author: 'H. G. Wells',
-}]);
+  const bookCollection = await db.createCollection<Book>('books');
+  console.log(bookCollection);
 
-bookCollection.update({ _id: '2' }, { author: 'Mary Shelly' });
-console.log(bookCollection.read({ _id: '2' }));
+  await bookCollection.create([{
+    name: '20,000 Leagues Under the Sea',
+    author: 'Jules Verne',
+  }, {
+    name: 'Journey to the Center of the Earth',
+    author: 'Jules Verne',
+  }, {
+    name: 'Frankenstein',
+    author: 'Jules Verne',
+  }, {
+    name: 'The Time Machine',
+    author: 'H. G. Wells',
+  }]);
 
-console.log(bookCollection.read({ author: 'Jules Verne' }));
+  await bookCollection.update({ _id: '2' }, { author: 'Mary Shelly' });
+  console.log(await bookCollection.read({ _id: '2' }));
 
-bookCollection.delete({ _id: '0' });
-console.log(bookCollection.read({ author: 'Jules Verne' }));
+  console.log(await bookCollection.read({ author: 'Jules Verne' }));
+
+  await bookCollection.delete({ _id: '0' });
+  console.log(await bookCollection.read({ author: 'Jules Verne' }));
+}
+
+
+main();

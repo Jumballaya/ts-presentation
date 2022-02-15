@@ -1,46 +1,68 @@
+import fs from 'fs';
+import path from 'path';
+import { promisify } from 'util';
 import { Collection } from "./Collection";
 
 export class Database {
 
-  private data: Map<string, Collection<unknown>> = new Map();
+  constructor(private readonly dataPath: string = './.data') { };
 
-  public createCollection<T>(name: string, typeName?: string): Collection<T> {
-    if (this.data.has(name)) {
-      const collection = this.data.get(name);
-      const type = collection?.type;
-      throw new Error(`Unable to create collection ${name}. It already exists with type ${type}`);
+  public async createCollection<T>(name: string): Promise<Collection<T>> {
+    if (await this.collectionExists(name)) {
+      return await this.readCollection(name) as Collection<T>;
     }
-    const collection = new Collection<T>(name, typeName || name);
-    this.data.set(name, collection);
+    const collection = new Collection<T>(name, name, this.dataPath);
+
+    // Create File
+    const fp = path.resolve(this.dataPath, `${name}.collection`);
+    await promisify(fs.writeFile)(fp, '[]');
+
     return collection;
   }
 
-  public readCollection<T>(name: string): Collection<T> | null {
-    const collection = this.data.get(name);
-    if (collection) {
-      return collection as Collection<T>;
+  public async readCollection<T>(name: string): Promise<Collection<T> | null> {
+    const fp = path.resolve(this.dataPath, `${name}.collection`);
+    // Find and read file
+    try {
+      const data = await promisify(fs.readFile)(fp);
+      return Collection.fromJSON(name, data.toString());
+    } catch (_) {
+      return await this.createCollection(name);
     }
-    return null;
   }
 
-  public updateCollection<T>(oldName: string, update: { name: string; type: string; }): Collection<T> | null {
-    if (this.data.has(oldName)) {
-      const oldCollection = this.readCollection<T>(oldName);
+  public async updateCollection<T>(oldName: string, update: { name: string }): Promise<Collection<T> | null> {
+    if (await this.collectionExists(oldName)) {
+      const oldCollection = await this.readCollection<T>(oldName);
       if (oldCollection) {
-        const updatedCollection = Collection.fromCollection<T>(oldCollection, update.name, update.type);
-        this.data.set(update.name, updatedCollection);
-        this.data.delete(oldName);
+        const updatedCollection = Collection.fromCollection<T>(oldCollection, update.name, update.name);
+        await this.deleteCollection(oldName);
+        await updatedCollection.save();
+        return updatedCollection;
       }
-      const col = this.createCollection<T>(update.name, update.type);
-      this.data.set(update.name, col);
+      const col = await this.createCollection<T>(update.name);
       return col;
     }
     return null;
   }
 
-  public deleteCollection(name: string) {
-    if (this.data.has(name)) {
-      this.data.delete(name);
+  public async deleteCollection(name: string): Promise<boolean> {
+    if (await this.collectionExists(name)) {
+      // Delete file
+      const fp = path.resolve(this.dataPath, `${name}.collection`);
+      await promisify(fs.rm)(fp);
+      return true;
+    }
+    return false;
+  }
+
+  private async collectionExists(name: string): Promise<boolean> {
+    try {
+      const fp = path.resolve(this.dataPath, `${name}.collection`);
+      const stat = await promisify(fs.lstat)(fp);
+      return stat.isFile();
+    } catch (_) {
+      return false;
     }
   }
 

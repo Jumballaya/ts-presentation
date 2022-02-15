@@ -47,7 +47,7 @@ export class BongoDBServer {
     })
   }
 
-  private handleEntryCommand(json: Command, socket: Socket, command: CommandType) {
+  private async handleEntryCommand(json: Command, socket: Socket, command: CommandType) {
 
     switch (command) {
 
@@ -55,7 +55,7 @@ export class BongoDBServer {
         const cmd = json.entry?.create;
         if (cmd) {
           const { collection, payload } = cmd
-          const col = this.db.readCollection(collection);
+          const col = await this.db.readCollection(collection);
           if (!col) {
             throw new Error(`Unable to find collection: ${collection}`);
           }
@@ -69,14 +69,14 @@ export class BongoDBServer {
         const cmd = json.entry?.read;
         if (cmd) {
           const name = cmd.collection;
-          const collection = this.db.readCollection(name);
+          const collection = await this.db.readCollection(name);
           const query = cmd.query || {};
           if (!collection) {
             throw new Error(`Unable to find collection: ${name}`);
           }
           socket.write(JSON.stringify({
             success: true,
-            payload: collection.read(query)
+            payload: await collection.read(query)
           }));
         }
         return;
@@ -86,7 +86,7 @@ export class BongoDBServer {
         const cmd = json.entry?.update;
         if (cmd) {
           const name = cmd.collection;
-          const collection = this.db.readCollection(name);
+          const collection = await this.db.readCollection(name);
           const query = cmd.query || {};
           const updates = cmd.updates || {};
           if (!updates) {
@@ -95,7 +95,7 @@ export class BongoDBServer {
           if (!collection) {
             throw new Error(`Unable to find collection: ${name}`);
           }
-          const payload = collection.update(query, updates);
+          const payload = await collection.update(query, updates);
           socket.write(JSON.stringify({
             success: true,
             payload,
@@ -108,12 +108,12 @@ export class BongoDBServer {
         const cmd = json.entry?.delete;
         if (cmd) {
           const name = cmd.collection;
-          const collection = this.db.readCollection(name);
+          const collection = await this.db.readCollection(name);
           const query = cmd.query || {};
           if (!collection) {
             throw new Error(`Unable to find collection: ${name}`);
           }
-          const payload = collection.delete(query);
+          const payload = await collection.delete(query);
           socket.write(JSON.stringify({
             success: true,
             payload,
@@ -126,13 +126,13 @@ export class BongoDBServer {
 
   }
 
-  private handleCollectionCommand(json: Command, socket: Socket, command: CommandType) {
+  private async handleCollectionCommand(json: Command, socket: Socket, command: CommandType) {
 
     switch (command) {
       case 'collection:create': {
         const cmd = json.collection?.create;
         if (cmd) {
-          this.db.createCollection(cmd.name, cmd.type);
+          this.db.createCollection(cmd.name);
           socket.write(JSON.stringify({ success: true }));
         }
         return;
@@ -141,7 +141,7 @@ export class BongoDBServer {
       case 'collection:read': {
         const cmd = json.collection?.read;
         if (cmd) {
-          const collection = this.db.readCollection(cmd.name);
+          const collection = await this.db.readCollection(cmd.name);
           if (collection) {
             socket.write(JSON.stringify({ success: true }));
             return;
@@ -154,11 +154,10 @@ export class BongoDBServer {
       case 'collection:update': {
         const cmd = json.collection?.update;
         if (cmd) {
-          const collection = this.db.readCollection(cmd.name);
+          const collection = await this.db.readCollection(cmd.name);
           if (collection) {
             this.db.updateCollection(cmd.name, {
               name: cmd.updates?.name || cmd.name,
-              type: cmd.updates?.type || collection.type,
             });
             socket.write(JSON.stringify({ success: true }));
             return;
@@ -171,7 +170,7 @@ export class BongoDBServer {
       case 'collection:delete': {
         const cmd = json.collection?.delete;
         if (cmd) {
-          const collection = this.db.readCollection(cmd.name);
+          const collection = await this.db.readCollection(cmd.name);
           if (collection) {
             this.db.deleteCollection(cmd.name);
             socket.write(JSON.stringify({ success: true }));
